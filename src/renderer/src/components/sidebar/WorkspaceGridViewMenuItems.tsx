@@ -2,13 +2,9 @@ import type { JSX } from 'react'
 import { LayoutGrid } from 'lucide-react'
 import { DropdownMenuItem } from '@/components/ui/dropdown-menu'
 import { translate } from '@/i18n/i18n'
-import {
-  addWorkspaceToGridViewAndShow,
-  removeWorkspaceFromGridViewKeepingFocus
-} from '@/lib/workspace-grid-view-actions'
-import { isWorkspaceGridViewFull } from '@/lib/workspace-grid-view-membership'
 import { useAppStore } from '@/store'
-import { isKnownGridViewWorkspace } from '@/store/slices/workspace-grid-view'
+import { showWorkspaceView } from '@/lib/workspace-view-actions'
+import { WORKSPACE_VIEW_MAX_SAVED } from '@/lib/workspace-view-layout'
 
 export function WorkspaceGridViewMenuItems({
   workspaceId,
@@ -17,34 +13,31 @@ export function WorkspaceGridViewMenuItems({
   workspaceId: string
   disabled: boolean
 }): JSX.Element {
-  const isMember = useAppStore((state) => state.workspaceGridViewMemberIds.includes(workspaceId))
-  const isFull = useAppStore((state) =>
-    isWorkspaceGridViewFull(state.workspaceGridViewMemberIds, (memberId) =>
-      isKnownGridViewWorkspace(state, memberId)
-    )
+  const savedLimitReached = useAppStore(
+    (state) =>
+      !state.activeWorkspaceViewId && state.workspaceViews.length >= WORKSPACE_VIEW_MAX_SAVED
   )
-
-  if (isMember) {
-    return (
-      <DropdownMenuItem
-        onSelect={() => removeWorkspaceFromGridViewKeepingFocus(workspaceId)}
-        disabled={disabled}
-      >
-        <LayoutGrid className="size-3.5" />
-        {translate(
-          'auto.components.sidebar.WorktreeContextMenu.removeFromGridView',
-          'Remove from Grid View'
-        )}
-      </DropdownMenuItem>
-    )
-  }
   return (
     <DropdownMenuItem
-      onSelect={() => addWorkspaceToGridViewAndShow(workspaceId)}
-      disabled={disabled || isFull}
+      disabled={disabled || savedLimitReached}
+      onSelect={() => {
+        const state = useAppStore.getState()
+        if (state.activeWorkspaceViewId) {
+          showWorkspaceView(state.activeWorkspaceViewId)
+        } else {
+          const id = state.createWorkspaceView(
+            translate('workspaceViews.defaultName', 'Untitled view')
+          )
+          if (!id) {
+            return
+          }
+        }
+        state.setActiveView('terminal')
+        state.setWorkspaceViewPicker({ workspaceId })
+      }}
     >
-      <LayoutGrid className="size-3.5" />
-      {translate('auto.components.sidebar.WorktreeContextMenu.addToGridView', 'Add to Grid View')}
+      <LayoutGrid />
+      {translate('workspaceViews.addWorkspacePanels', 'Add panels to view…')}
     </DropdownMenuItem>
   )
 }

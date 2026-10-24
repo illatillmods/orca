@@ -9,6 +9,7 @@ import { useAppStore } from '../store'
 import { FLOATING_TERMINAL_WORKTREE_ID } from '../../../shared/constants'
 import { selectActiveTerminalChromeState } from '../store/active-terminal-chrome-selector'
 import { useSystemPrefersDark } from '../components/terminal-pane/use-system-prefers-dark'
+import { selectShownWorkspaceView } from '@/lib/workspace-view-catalog'
 import {
   hasRequestedBackgroundTerminalWorktreeMount,
   subscribeBackgroundTerminalWorktreeMountRequests
@@ -22,8 +23,12 @@ export type AppChromeLayout = ReturnType<typeof useAppChromeLayout>
  */
 export function useAppChromeLayout() {
   const activeView = useAppStore((s) => s.activeView)
-  const sidebarOpen = useAppStore((s) => s.sidebarOpen)
-  const rightSidebarOpen = useAppStore((s) => s.rightSidebarOpen)
+  const workspaceView = useAppStore(selectShownWorkspaceView)
+  const fillWorkspaceView = useAppStore(
+    (state) => state.workspaceViewFillWindow && selectShownWorkspaceView(state) !== null
+  )
+  const sidebarOpen = useAppStore((s) => s.sidebarOpen) && !fillWorkspaceView
+  const rightSidebarOpen = useAppStore((s) => s.rightSidebarOpen) && !fillWorkspaceView
   const rightSidebarTab = useAppStore((s) => s.rightSidebarTab)
   const rightSidebarExplorerView = useAppStore((s) => s.rightSidebarExplorerView)
   const isFullScreen = useAppStore((s) => s.isFullScreen)
@@ -60,7 +65,10 @@ export function useAppChromeLayout() {
     (s) => (s.unifiedTabsByWorktree[FLOATING_TERMINAL_WORKTREE_ID]?.length ?? 0) > 0
   )
   const canMountTerminalWorkbenchNow =
-    activeWorktreeId !== null || backgroundTerminalMountRequested || floatingWorkspaceHasTabs
+    activeWorktreeId !== null ||
+    backgroundTerminalMountRequested ||
+    floatingWorkspaceHasTabs ||
+    workspaceView !== null
   // Why a latch in state, not a ref: the write has to be visible to the next render, and a
   // render-phase ref write would also survive a render React discards. Setting state during
   // render is the supported way to derive it, and the `||` below keeps this render correct.
@@ -77,11 +85,16 @@ export function useAppChromeLayout() {
     hasActivePendingCreation: activePendingCreationExists
   })
   const workspaceChromeActive =
-    activeView === 'terminal' && activeWorktreeId !== null && !creationLayoutActive
+    activeView === 'terminal' &&
+    (activeWorktreeId !== null || workspaceView !== null) &&
+    !creationLayoutActive
   const hasTabBar = tabCount >= 2
   // Activity/Space are full-page navigation surfaces (like Settings), so the worktree sidebar is hidden there.
   const showSidebar =
-    activeView !== 'settings' && activeView !== 'activity' && activeView !== 'space'
+    activeView !== 'settings' &&
+    activeView !== 'activity' &&
+    activeView !== 'space' &&
+    !fillWorkspaceView
   // Tasks/Landing show the full titlebar only when the sidebar is collapsed; open, they mirror workspace view (creation suppresses it).
   const stackedSidebarOpen =
     !workspaceChromeActive && !creationLayoutActive && showSidebar && sidebarOpen
@@ -141,7 +154,8 @@ export function useAppChromeLayout() {
     shouldMountTerminalWorkbench,
     showSidebar,
     // Full-page navigation surfaces own the whole content area, so suppress right-sidebar controls.
-    showRightSidebarControls: !creationLayoutActive && canShowRightSidebarForView(activeView),
+    showRightSidebarControls:
+      !creationLayoutActive && !fillWorkspaceView && canShowRightSidebarForView(activeView),
     showTitlebarAppName: settings?.showTitlebarAppName !== false,
     showTitlebarExpandButton: workspaceChromeActive && !hasTabBar && effectiveActiveTabExpanded,
     sidebarOpen,

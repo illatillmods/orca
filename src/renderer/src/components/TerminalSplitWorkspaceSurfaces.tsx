@@ -1,10 +1,11 @@
-import { useMemo } from 'react'
-import { computeWorkspaceGridViewCellRects } from '@/lib/workspace-grid-view-cell-rects'
+import { useAppStore } from '@/store'
+import { selectShownWorkspaceView } from '@/lib/workspace-view-catalog'
 import { useAnyBrowserGuestNeedsPaint } from './browser-pane/host-guest/browser-guest-paint-retention'
 import { WorktreeSplitSurface } from './TerminalWorktreeSplitSurface'
 import { selectParkedEquivalentMountTabIds } from './terminal/startup-terminal-tab-hold'
 import type { TerminalController } from './use-terminal-controller'
-import { WorkspaceGridViewEmptyCell } from './workspace-grid-view/WorkspaceGridViewEmptyCell'
+import { WorkspaceViewMissingPanels } from './workspace-grid-view/WorkspaceViewMissingPanels'
+import { WorkspaceViewResizeHandles } from './workspace-grid-view/WorkspaceViewResizeHandles'
 
 export function TerminalSplitWorkspaceSurfaces({
   controller
@@ -33,23 +34,15 @@ export function TerminalSplitWorkspaceSurfaces({
   // remote controller needs each to drop `hidden` — the per-worktree surface hatch below cannot
   // override an ancestor that stopped compositing.
   const retainBrowserGuestPaint = useAnyBrowserGuestNeedsPaint(!effectiveActiveLayout)
-  const isGridViewVisible = activeView === 'terminal' && visibleWorkspaceIds.length > 1
-  const gridViewCellRects = useMemo(
-    () => (isGridViewVisible ? computeWorkspaceGridViewCellRects(visibleWorkspaceIds.length) : []),
-    [isGridViewVisible, visibleWorkspaceIds.length]
-  )
-  if (!anyMountedWorktreeHasLayout) {
+  const workspaceView = useAppStore(selectShownWorkspaceView)
+  if (!anyMountedWorktreeHasLayout && !workspaceView) {
     return null
   }
-  const gridViewCellRectFor = (workspaceId: string) =>
-    gridViewCellRects[visibleWorkspaceIds.indexOf(workspaceId)] ?? null
   const renderedWorkspaceIds = new Set<string>()
-  // Why the grid view stays shown without an active layout: opening an empty member can seed
-  // its first tab asynchronously, and the other cells must not vanish meanwhile.
   return (
     <div
       className={`relative flex flex-1 min-w-0 min-h-0 overflow-hidden${
-        effectiveActiveLayout || isGridViewVisible
+        effectiveActiveLayout || workspaceView
           ? ''
           : retainBrowserGuestPaint
             ? ' opacity-0 pointer-events-none'
@@ -80,7 +73,6 @@ export function TerminalSplitWorkspaceSurfaces({
               focusedGroupId={activeGroupIdByWorktree[workspace.id]}
               isVisible={isVisible}
               isFocused={isVisible && workspace.id === renderedActiveWorktreeId}
-              gridViewCellRect={isGridViewVisible ? gridViewCellRectFor(workspace.id) : null}
               shouldMeasureHiddenWorktree={shouldMeasureHiddenWorktree}
               shouldColdParkTerminalPanes={shouldColdParkTerminalPanes}
               isForceParked={forceParkedTerminalWorktreeIds.has(workspace.id)}
@@ -96,26 +88,10 @@ export function TerminalSplitWorkspaceSurfaces({
             />
           )
         })}
-      {isGridViewVisible
-        ? workspaceSurfaces
-            .filter(
-              (workspace) =>
-                visibleWorkspaceIds.includes(workspace.id) &&
-                !renderedWorkspaceIds.has(workspace.id)
-            )
-            .map((workspace) => {
-              const rect = gridViewCellRectFor(workspace.id)
-              return rect ? (
-                <WorkspaceGridViewEmptyCell
-                  key={`grid-view-empty-${workspace.id}`}
-                  workspaceId={workspace.id}
-                  workspacePath={workspace.path}
-                  rect={rect}
-                  isOpening={workspace.id === renderedActiveWorktreeId}
-                />
-              ) : null
-            })
-        : null}
+      {workspaceView ? (
+        <WorkspaceViewMissingPanels renderedWorkspaceIds={renderedWorkspaceIds} />
+      ) : null}
+      <WorkspaceViewResizeHandles />
     </div>
   )
 }

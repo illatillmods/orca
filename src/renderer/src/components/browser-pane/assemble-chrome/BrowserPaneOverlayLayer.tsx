@@ -1,3 +1,4 @@
+import { focusWorkspaceViewAnchor } from '@/lib/workspace-view-actions'
 import { memo, useCallback, useMemo } from 'react'
 import { registerBrowserOverlaySlotViewport } from '../host-guest/browser-page-viewport'
 import { useShallow } from 'zustand/react/shallow'
@@ -18,6 +19,8 @@ import {
 } from '@/lib/pane-manager/client-hosted-browser-row-state'
 import { ClientHostedBrowserHostRowPane } from '../client-hosted-browser-host-row-pane'
 import { useAnyBrowserPageMountAdmission } from '../host-guest/browser-page-mount-admission'
+import { useWorkspaceViewProjection } from '../../workspace-grid-view/workspace-view-projection'
+import { workspaceViewAnchorId } from '@/lib/workspace-view-layout'
 
 // Why: Electron <webview> destroys its guest on DOM reparent, so BrowserPanes render at worktree level and moving a tab between groups only swaps the overlay's CSS position-anchor.
 
@@ -50,6 +53,7 @@ const BrowserOverlaySlot = memo(function BrowserOverlaySlot({
   chromeShortcutScope,
   onFocusOwningGroup
 }: BrowserOverlaySlotProps): React.JSX.Element {
+  const viewProjection = useWorkspaceViewProjection()
   // Why: persistent page viewports (webview guests) live under this root so they survive BrowserPane chrome unmounts without reparenting.
   const setSlotViewportRef = useCallback(
     (node: HTMLDivElement | null): void => {
@@ -103,7 +107,8 @@ const BrowserOverlaySlot = memo(function BrowserOverlaySlot({
       style={style}
       className="relative flex min-h-0 flex-1 flex-col"
       data-browser-overlay-tab-id={browserTab.id}
-      onPointerDown={handleFocus}
+      onPointerDown={viewProjection ? undefined : handleFocus}
+      onPointerDownCapture={viewProjection ? handleFocus : undefined}
       onFocusCapture={handleFocus}
     >
       <div ref={setSlotViewportRef} className="absolute inset-0 flex min-h-0 flex-col" />
@@ -129,6 +134,7 @@ const BrowserPaneOverlayLayer = memo(function BrowserPaneOverlayLayer({
   isWorktreeActive: boolean
   isWorktreeFocused?: boolean
 }): React.JSX.Element {
+  const viewProjection = useWorkspaceViewProjection()
   const { browserTabs, unifiedTabs, groups, focusedGroupId } = useAppStore(
     useShallow((state) => ({
       browserTabs: state.browserTabsByWorktree[worktreeId] ?? EMPTY_BROWSER_TABS,
@@ -150,8 +156,12 @@ const BrowserPaneOverlayLayer = memo(function BrowserPaneOverlayLayer({
 
   // Why: stable identity so BrowserOverlaySlot's memo holds; groupId is passed at call time so one callback serves every slot.
   const focusOwningGroup = useCallback(
-    (groupId: string) => focusGroup(worktreeId, groupId),
-    [focusGroup, worktreeId]
+    (groupId: string) => {
+      if (!focusWorkspaceViewAnchor(viewProjection, groupId)) {
+        focusGroup(worktreeId, groupId)
+      }
+    },
+    [focusGroup, worktreeId, viewProjection]
   )
 
   // Why: build this lookup outside the zustand selector — a fresh object inside it would break useShallow equality and re-render on every unrelated mutation.
@@ -182,10 +192,16 @@ const BrowserPaneOverlayLayer = memo(function BrowserPaneOverlayLayer({
     <>
       {browserTabs.map((browserTab) => {
         const assignment = assignments.get(browserTab.id)
-        const isActive = Boolean(isWorktreeActive && assignment && assignment.isActiveInGroup)
+        const placement = viewProjection?.find(
+          (p) => p.tab.contentType === 'browser' && p.tab.entityId === browserTab.id
+        )
+        const isActive = Boolean(
+          isWorktreeActive && (viewProjection ? placement?.visible : assignment?.isActiveInGroup)
+        )
         const chromeShortcutScope = resolveBrowserChromeShortcutScope({
           isActive,
-          isWorktreeFocused,
+          isWorktreeFocused:
+            isWorktreeFocused && (viewProjection ? placement?.focused === true : true),
           isFloatingWorkspace,
           focusedGroupId: knownFocusedGroupId,
           groupId: assignment?.groupId
@@ -195,7 +211,13 @@ const BrowserPaneOverlayLayer = memo(function BrowserPaneOverlayLayer({
             key={browserTab.id}
             browserTab={browserTab}
             isWorktreeActive={isWorktreeActive}
-            groupId={assignment?.groupId}
+            groupId={
+              viewProjection
+                ? placement
+                  ? workspaceViewAnchorId(placement.panel.id)
+                  : undefined
+                : assignment?.groupId
+            }
             isActive={isActive}
             chromeShortcutScope={chromeShortcutScope}
             onFocusOwningGroup={focusOwningGroup}
@@ -208,7 +230,7 @@ const BrowserPaneOverlayLayer = memo(function BrowserPaneOverlayLayer({
       <ClientHostedBrowserRowOverlaySlot
         worktreeId={worktreeId}
         groups={groups}
-        isWorktreeActive={isWorktreeActive}
+        isWorktreeActive={isWorktreeActive && !viewProjection}
       />
     </>
   )

@@ -31,7 +31,7 @@ const state = {
   settings: { activeRuntimeEnvironmentId: null, openInApplications: [] },
   openSettingsPage: vi.fn(),
   openSettingsTarget: vi.fn(),
-  workspaceGridViewMemberIds: []
+  workspaceViews: []
 }
 
 vi.mock('@/store', () => ({

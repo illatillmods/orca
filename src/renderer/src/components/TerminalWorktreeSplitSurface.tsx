@@ -11,16 +11,11 @@ import {
 } from './browser-pane/host-guest/browser-worktree-surface-paintability'
 import TabGroupSplitLayout from './tab-group/TabGroupSplitLayout'
 import { WorkspacePaneOverlayLayers } from './WorkspacePaneOverlayLayers'
-import type { WorkspaceGridViewCellRect } from '@/lib/workspace-grid-view-cell-rects'
-import { WorkspaceGridViewCellHeader } from './workspace-grid-view/WorkspaceGridViewCellHeader'
+import { WorkspaceViewProjection } from './workspace-grid-view/workspace-view-projection'
 import {
-  focusWorkspaceGridViewCellOnFocus,
-  focusWorkspaceGridViewCellOnPointerDown,
-  workspaceGridViewCellClassName,
-  workspaceGridViewCellStyle,
-  workspaceGridViewCellWindowCorners
-} from './workspace-grid-view/workspace-grid-view-cell-frame'
-
+  useWorkspaceViewSurfaceProjection,
+  WorkspaceViewSurfacePanels
+} from './workspace-grid-view/WorkspaceViewSurfacePanels'
 export const WorktreeSplitSurface = React.memo(function WorktreeSplitSurface({
   worktreeId,
   worktreePath,
@@ -28,7 +23,6 @@ export const WorktreeSplitSurface = React.memo(function WorktreeSplitSurface({
   focusedGroupId,
   isVisible,
   isFocused = isVisible,
-  gridViewCellRect = null,
   shouldMeasureHiddenWorktree,
   shouldColdParkTerminalPanes,
   isForceParked,
@@ -43,8 +37,6 @@ export const WorktreeSplitSurface = React.memo(function WorktreeSplitSurface({
   isVisible: boolean
   /** False for a grid view member that is on screen but does not own keyboard focus. */
   isFocused?: boolean
-  /** Set while this workspace is one cell of the grid view. */
-  gridViewCellRect?: WorkspaceGridViewCellRect | null
   shouldMeasureHiddenWorktree: boolean
   shouldColdParkTerminalPanes: boolean
   isForceParked: boolean
@@ -59,70 +51,54 @@ export const WorktreeSplitSurface = React.memo(function WorktreeSplitSurface({
     needsBrowserGuestPaint
   })
 
-  const gridViewCell = isVisible ? gridViewCellRect : null
-
-  // Why the header slot is always first: entering or leaving the grid view must not change the
-  // children's positions, or React would remount the group tree and every live terminal pane.
+  const projection = useWorkspaceViewSurfaceProjection(worktreeId)
   return (
-    <div
-      className={
-        gridViewCell
-          ? workspaceGridViewCellClassName(gridViewCell)
-          : isVisible
-            ? 'absolute inset-0 flex'
+    <WorkspaceViewProjection value={projection}>
+      <div
+        className={
+          isVisible
+            ? projection
+              ? 'absolute inset-0 pointer-events-none'
+              : 'absolute inset-0 flex'
             : shouldKeepPaintable
               ? 'absolute inset-0 flex opacity-0 pointer-events-none'
               : 'absolute inset-0 hidden'
-      }
-      style={gridViewCell ? workspaceGridViewCellStyle(gridViewCell) : undefined}
-      data-workspace-grid-view-cell={gridViewCell ? worktreeId : undefined}
-      inert={!isVisible}
-      aria-hidden={!isVisible}
-      onPointerDownCapture={
-        gridViewCell && !isFocused
-          ? (event) => focusWorkspaceGridViewCellOnPointerDown(event.target, worktreeId)
-          : undefined
-      }
-      onFocusCapture={
-        gridViewCell && !isFocused
-          ? (event) => focusWorkspaceGridViewCellOnFocus(event.target, worktreeId)
-          : undefined
-      }
-    >
-      {gridViewCell ? (
-        <WorkspaceGridViewCellHeader
-          workspaceId={worktreeId}
-          workspacePath={worktreePath}
+        }
+        inert={!isVisible}
+        aria-hidden={!isVisible}
+      >
+        <div
+          className={projection ? 'hidden' : 'flex min-h-0 min-w-0 flex-1'}
+          inert={Boolean(projection)}
+        >
+          <TabGroupSplitLayout
+            layout={layout}
+            worktreeId={worktreeId}
+            focusedGroupId={focusedGroupId}
+            isWorktreeActive={isVisible && !projection}
+            isWorktreeFocused={isFocused && !projection}
+          />
+        </div>
+        {projection ? <WorkspaceViewSurfacePanels projection={projection} /> : null}
+        <WorkspacePaneOverlayLayers
+          worktreeId={worktreeId}
+          worktreePath={worktreePath}
+          isVisible={isVisible}
           isFocused={isFocused}
-          windowCorners={workspaceGridViewCellWindowCorners(gridViewCell)}
+          shouldMeasureHiddenWorktree={shouldMeasureHiddenWorktree}
+          shouldColdParkTerminalPanes={shouldColdParkTerminalPanes}
+          isForceParked={isForceParked}
+          activityTerminalPortals={activityTerminalPortals}
+          backgroundMountTabIds={backgroundMountTabIds}
+          activationDeferredMountTabIds={activationDeferredMountTabIds}
+          mountRetainedBrowserOverlay={shouldMountRetainedBrowserOverlay({
+            isWorktreeVisible: isVisible,
+            hasDeferredBackgroundMounts: backgroundMountTabIds !== null,
+            needsBrowserGuestPaint
+          })}
+          mountEmulatorOverlay={isVisible || backgroundMountTabIds === null}
         />
-      ) : null}
-      <TabGroupSplitLayout
-        layout={layout}
-        worktreeId={worktreeId}
-        focusedGroupId={focusedGroupId}
-        isWorktreeActive={isVisible}
-        isWorktreeFocused={isFocused}
-        touchesWindowTop={!gridViewCell}
-      />
-      <WorkspacePaneOverlayLayers
-        worktreeId={worktreeId}
-        worktreePath={worktreePath}
-        isVisible={isVisible}
-        isFocused={isFocused}
-        shouldMeasureHiddenWorktree={shouldMeasureHiddenWorktree}
-        shouldColdParkTerminalPanes={shouldColdParkTerminalPanes}
-        isForceParked={isForceParked}
-        activityTerminalPortals={activityTerminalPortals}
-        backgroundMountTabIds={backgroundMountTabIds}
-        activationDeferredMountTabIds={activationDeferredMountTabIds}
-        mountRetainedBrowserOverlay={shouldMountRetainedBrowserOverlay({
-          isWorktreeVisible: isVisible,
-          hasDeferredBackgroundMounts: backgroundMountTabIds !== null,
-          needsBrowserGuestPaint
-        })}
-        mountEmulatorOverlay={isVisible || backgroundMountTabIds === null}
-      />
-    </div>
+      </div>
+    </WorkspaceViewProjection>
   )
 })

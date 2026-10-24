@@ -49,7 +49,7 @@ import type { TerminalQuickCommandHostsSlice } from './slices/terminal-quick-com
 import type { StructuredSessionLaunchDirectorySlice } from './slices/structured-session-launch-directories'
 import type { StructuredChatSleptAtSlice } from './slices/structured-chat-slept-at'
 import type { WorkspaceAttentionSlice } from './slices/workspace-attention/workspace-attention-contract'
-import type { WorkspaceGridViewSlice } from './slices/workspace-grid-view'
+import type { WorkspaceViewsSlice } from './slices/workspace-views'
 
 export type AppState = RepoSlice &
   SparsePresetsSlice &
@@ -100,4 +100,4 @@ export type AppState = RepoSlice &
   StructuredSessionLaunchDirectorySlice &
   StructuredChatSleptAtSlice &
   WorkspaceAttentionSlice &
-  WorkspaceGridViewSlice
+  WorkspaceViewsSlice

@@ -29,7 +29,7 @@ vi.mock('@/store', () => {
     moveProjectToGroup: vi.fn(),
     deleteFolderWorkspace: vi.fn(),
     setActiveWorktree: vi.fn(),
-    workspaceGridViewMemberIds: []
+    workspaceViews: []
   }
   return {
     useAppStore: Object.assign((selector: (value: typeof state) => unknown) => selector(state), {

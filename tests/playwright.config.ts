@@ -15,6 +15,7 @@ import { resolveBuildSourceCommit } from '../config/scripts/build-source-commit.
  */
 export default defineConfig({
   testDir: './e2e',
+  outputDir: process.env.ORCA_E2E_OUTPUT_DIR,
   // Keep checkout provenance without fetching the PR base during test setup.
   captureGitInfo: { commit: false, diff: false },
   metadata: { sourceCommit: resolveBuildSourceCommit() },

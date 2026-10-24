@@ -6298,9 +6298,7 @@
           "deleteWorktree": "Delete Worktree",
           "sleepWithDescendants": "Sleep with Descendants ({{value0}})",
           "sleepWithDescendantsDescription": "Close active panels in this workspace and every nested descendant to free up memory and CPU.",
-          "deleteWithDescendants": "Delete with Descendants…",
-          "removeFromGridView": "Remove from Grid View",
-          "addToGridView": "Add to Grid View"
+          "deleteWithDescendants": "Delete with Descendants…"
         },
         "WorktreeList": {
           "7a8b9c0d1e": "Update required",
@@ -18776,18 +18774,6 @@
         "cancelled": "This plain SSH terminal was closed before it started.",
         "terminalUnavailable": "Orca couldn’t open a terminal here.",
         "openHint": "Keeps you working on the host while Orca can’t set up there."
-      },
-      "workspace-grid-view": {
-        "WorkspaceGridViewCellHeader": {
-          "cellNameWithProject": "{{value0}} ({{value1}})",
-          "removeFromGridView": "Remove from Grid View",
-          "removeNamedFromGridView": "Remove from Grid View: {{value0}}"
-        },
-        "WorkspaceGridViewEmptyCell": {
-          "openingWorkspace": "Opening workspace…",
-          "openNamedWorkspace": "Open Workspace: {{value0}}",
-          "openWorkspace": "Open Workspace"
-        }
       }
     },
     "i18n": {
@@ -21254,5 +21240,43 @@
     "restartLocal": "Restart local daemon",
     "killAllLocal": "Kill all local sessions",
     "killFailed": "The terminal could not be ended. Last-observed sessions are retained."
+  },
+  "workspaceViews": {
+    "views": "Views",
+    "newView": "New view…",
+    "renameView": "Rename view…",
+    "removeView": "Remove saved view",
+    "nameDescription": "Save an arrangement of panels from any project on this device.",
+    "name": "Name",
+    "cancel": "Cancel",
+    "save": "Save view",
+    "showNavigation": "Show navigation",
+    "fillWindow": "Fill window",
+    "exitView": "Return to workspace",
+    "arrangement": "Panel arrangement",
+    "grid": "Equal grid",
+    "primary": "Primary and stack",
+    "addPanel": "Add panel",
+    "choosePanel": "Choose panel",
+    "pickerDescription": "Choose existing panels. Their sessions stay in the original workspace.",
+    "searchPanels": "Find a project, workspace or panel…",
+    "noPanels": "No open panels found. Open a panel in a workspace first.",
+    "alreadyVisible": "In this view",
+    "selected": "Selected",
+    "selectionCount": "{{count}} selected",
+    "addSelected": "Add selected panels",
+    "restorePanels": "Restore all panels",
+    "expandPanel": "Expand panel",
+    "removePanel": "Remove from view; keep session open",
+    "panelActions": "Panel actions: {{title}}",
+    "changePanel": "Choose another panel…",
+    "moveEarlier": "Move earlier",
+    "moveLater": "Move later",
+    "unavailable": "This panel is unavailable. Its workspace or host may be offline, or the panel may have closed.",
+    "loadingPanel": "Loading panel…",
+    "resizePanels": "Resize panels",
+    "empty": "Keep the panels you work with together in this view.",
+    "defaultName": "Untitled view",
+    "addWorkspacePanels": "Add panels to view…"
   }
 }

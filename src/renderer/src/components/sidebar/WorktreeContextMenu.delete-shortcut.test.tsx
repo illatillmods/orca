@@ -101,7 +101,7 @@ const defaultStoreState = {
   browserTabsByWorktree: {},
   worktreesByRepo: {},
   repos: [],
-  workspaceGridViewMemberIds: []
+  workspaceViews: []
 }
 
 vi.mock('@/store', () => ({

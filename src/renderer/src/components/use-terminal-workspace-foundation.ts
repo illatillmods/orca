@@ -4,7 +4,7 @@ import type { TerminalTab } from '../../../shared/terminal-tab-types'
 import { useAppStore } from '../store'
 import { useWorktreeMap } from '../store/selectors'
 import { getResolvedExecutionHostIdForWorktree } from '@/lib/resolved-worktree-execution-host'
-import { resolveVisibleWorkspaceIds } from '@/lib/workspace-grid-view-membership'
+import { resolveWorkspaceViewTab, selectShownWorkspaceView } from '@/lib/workspace-view-catalog'
 import type { WorktreeTabBucketProjection } from '@/lib/worktree-tab-bucket-projection'
 import { projectWorkspaceSurfaces } from './workspace-surface-projection'
 import { useReusedArrayIdentity } from './sidebar/worktree-list/listing/use-reused-array-identity'
@@ -64,19 +64,25 @@ export function useTerminalWorkspaceFoundation() {
     () => new Set(workspaceSurfaceIds),
     [workspaceSurfaceIds]
   )
-  const workspaceGridViewMemberIds = useAppStore((state) => state.workspaceGridViewMemberIds)
-  // Why separate from renderedActiveWorktreeId: grid view members are on screen together, but only
-  // the active one owns keyboard focus and global shortcuts.
+  const workspaceView = useAppStore(selectShownWorkspaceView)
+  const visibleViewWorkspaceKey = useAppStore((state) =>
+    JSON.stringify([
+      ...new Set(
+        workspaceView?.panels
+          .filter((panel) => resolveWorkspaceViewTab(state, panel))
+          .map((panel) => panel.workspaceId) ?? []
+      )
+    ])
+  )
+  const parsedViewWorkspaceIds: unknown = JSON.parse(visibleViewWorkspaceKey)
   const visibleWorkspaceIds = useReusedArrayIdentity(
-    useMemo(
-      () =>
-        resolveVisibleWorkspaceIds({
-          gridViewMemberIds: workspaceGridViewMemberIds,
-          activeWorkspaceId: renderedActiveWorktreeId,
-          mountableWorkspaceIds: workspaceSurfaceIdSet
-        }),
-      [workspaceGridViewMemberIds, renderedActiveWorktreeId, workspaceSurfaceIdSet]
-    )
+    workspaceView && Array.isArray(parsedViewWorkspaceIds)
+      ? parsedViewWorkspaceIds.filter(
+          (id): id is string => typeof id === 'string' && workspaceSurfaceIdSet.has(id)
+        )
+      : renderedActiveWorktreeId
+        ? [renderedActiveWorktreeId]
+        : []
   )
   const activeView = useAppStore((state) => state.activeView)
   // Why: terminal titles are leaf chrome. The root host only subscribes to
