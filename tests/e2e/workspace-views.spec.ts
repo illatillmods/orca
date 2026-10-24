@@ -268,7 +268,7 @@ test('normal new-terminal commands replace the focused panel and preserve its pr
   await target.locator('[data-workspace-view-panel-header]').click()
   await page.keyboard.press('ControlOrMeta+t')
   await waitForActiveTerminalManager(page)
-  await waitForActivePanePtyId(page)
+  const createdPtyId = await waitForActivePanePtyId(page)
   const created = await getActiveTabId(page)
   expect(created).toBeTruthy()
   expect(created).not.toBe(original)
@@ -282,7 +282,7 @@ test('normal new-terminal commands replace the focused panel and preserve its pr
   )
   await expect(panel).toHaveAttribute('data-workspace-view-tab-id', unifiedId ?? '')
   await expect(page.locator('[data-workspace-view-panel-id]')).toHaveCount(2)
-  await page.keyboard.type('echo NEW_VIEW_TERMINAL_ONLY')
+  await page.keyboard.type("printf 'NEW_VIEW_TERMINAL_%s\\n' ONLY")
   await page.keyboard.press('Enter')
   await expect
     .poll(async () => (await readTerminalBuffers(page, [created]))[created])
@@ -290,7 +290,19 @@ test('normal new-terminal commands replace the focused panel and preserve its pr
   const previous = await readTerminalBuffers(page, [original, sibling])
   expect(previous[original]).not.toContain('NEW_VIEW_TERMINAL_ONLY')
   expect(previous[sibling]).not.toContain('NEW_VIEW_TERMINAL_ONLY')
+  await page.keyboard.type('sleep 300')
+  await page.keyboard.press('Enter')
+  await expect
+    .poll(
+      async () =>
+        (await page.evaluate((id) => window.api.pty.inspectProcess(id), createdPtyId))
+          .foregroundProcess
+    )
+    .toBe('sleep')
   await page.keyboard.press('ControlOrMeta+w')
+  const confirmation = page.getByRole('dialog')
+  await expect(confirmation.getByRole('heading', { name: 'Stop running command?' })).toBeVisible()
+  await confirmation.getByRole('button', { name: 'Stop and Close', exact: true }).click()
   await expect(panel).toContainText('This panel is unavailable.')
   await expect(panelByTitle(page, 'Command Beta')).toHaveAttribute('data-current', 'true')
 })
