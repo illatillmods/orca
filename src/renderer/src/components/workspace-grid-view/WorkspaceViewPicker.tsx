@@ -27,10 +27,14 @@ function OpenWorkspaceViewPicker(): React.JSX.Element {
   const entries = useMemo(() => (snapshot ? collectWorkspaceViewPanels(snapshot) : []), [snapshot])
   const grouped = useMemo(() => {
     const groups = new Map<string, typeof entries>()
-    for (const entry of entries) {
-      if (picker?.workspaceId && entry.workspaceId !== picker.workspaceId) {
-        continue
-      }
+    const ordered = picker?.workspaceId
+      ? [...entries].sort(
+          (a, b) =>
+            Number(b.workspaceId === picker.workspaceId) -
+            Number(a.workspaceId === picker.workspaceId)
+        )
+      : entries
+    for (const entry of ordered) {
       const label = `${entry.projectName} / ${entry.workspaceName}`
       const list = groups.get(label) ?? []
       list.push(entry)
