@@ -118,6 +118,7 @@ test('chosen terminals across projects retain their sessions through focus, resi
   electronApp,
   registerPostElectronShutdownCleanup
 }) => {
+  // Cold project terminals must start before exercising the full layout and retention sequence.
   test.setTimeout(180_000)
   const errors: string[] = []
   page.on('pageerror', (error) => errors.push(error.message))
@@ -255,6 +256,7 @@ test('chosen terminals across projects retain their sessions through focus, resi
 test('normal new-terminal commands replace the focused panel and preserve its previous session', async ({
   orcaPage: page
 }) => {
+  // Each terminal creation waits for a live PTY before checking panel replacement and retention.
   test.setTimeout(120_000)
   await waitForSessionReady(page)
   const workspaceId = await waitForActiveWorktree(page)
@@ -310,6 +312,7 @@ test('normal new-terminal commands replace the focused panel and preserve its pr
 test('restores a saved view after restart and shows a placeholder when its tab closes', async ({
   testRepoPath
 }) => {
+  // The persistence check launches Electron twice and waits for restored terminal sessions.
   test.setTimeout(180_000)
   const session = createRestartSession(test.info())
   let app: ElectronApplication | undefined

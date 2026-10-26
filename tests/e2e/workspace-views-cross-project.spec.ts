@@ -111,6 +111,7 @@ test('chooses terminals and an editor across three independent projects, with wo
   electronApp,
   registerPostElectronShutdownCleanup
 }, testInfo) => {
+  // Three cold project sessions and an additional worktree must settle before the layout checks.
   test.setTimeout(240_000)
   test.skip(
     process.platform === 'win32',

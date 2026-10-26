@@ -30,6 +30,7 @@ test('keeps a browser guest and an unsaved editor draft through view changes', a
   orcaPage: page,
   registerPostElectronShutdownCleanup
 }) => {
+  // Cold editor and browser initialization precedes the retained guest and draft checks.
   test.setTimeout(180_000)
   await waitForSessionReady(page)
   const workspaceId = await waitForActiveWorktree(page)
