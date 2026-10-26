@@ -91,10 +91,7 @@ export function createSetActiveWorktree(
         reconciledActiveTabId
       )
 
-      // Why: prep is deferred (shell render deferred below) so it waits for input quiet instead of blocking the click.
-      // Why first-activation guard, not tab.ptyId==null: reconnectPersistedTerminals repopulates ptyId before mount.
-      // Tag every tab on FIRST activation so reattach/fresh-spawn updateTabPtyId suppresses activity + sortEpoch bumps.
-      // Generation is only bumped when no tab has a live PTY — a live remount would kill the user's shell.
+      // Defer prep until input quiet. First activation tags even rehydrated PTYs to suppress click activity; bump generation only for dead tabs or remount kills live shells.
       const tabs = s.tabsByWorktree[worktreeId ?? ''] ?? []
       const wakeable = tabs.filter(isWakeable)
       const allDead =
@@ -171,9 +168,7 @@ export function createSetActiveWorktree(
       }
     })
 
-    // Why: any activation is an explicit wake (null is the sleep flow clearing selection).
-    // Cleared after the set() above so a pane still waiting on the marker connects once,
-    // in the remounted generation, instead of connecting and then being remounted.
+    // Ordinary navigation wakes after the generation update; view focus preserves sleeping sessions.
     if (!options?.preserveTerminalSessions) {
       clearWorktreeSleepIntent(worktreeId)
     }

@@ -6,6 +6,7 @@ const MAX_RATIO = 0.85
 export function TabGroupResizeHandle({
   direction,
   onResizeStart,
+  onResizeEnd,
   onRatioChange,
   onRatioPreview,
   ratio = 0.5,
@@ -13,6 +14,7 @@ export function TabGroupResizeHandle({
 }: {
   direction: 'horizontal' | 'vertical'
   onResizeStart: () => void
+  onResizeEnd?: () => void
   onRatioChange: (ratio: number) => void
   onRatioPreview?: (ratio: number) => void
   ratio?: number
@@ -81,6 +83,7 @@ export function TabGroupResizeHandle({
         }
         cleaned = true
         resizeObserver.disconnect()
+        onResizeEnd?.()
         if (draggedRatio !== null) {
           onRatioChange(draggedRatio)
         }
@@ -127,7 +130,7 @@ export function TabGroupResizeHandle({
       handle.addEventListener('lostpointercapture', onLostPointerCapture)
       activeResizeCleanupRef.current = cleanup
     },
-    [isHorizontal, onRatioChange, onRatioPreview, onResizeStart]
+    [isHorizontal, onRatioChange, onRatioPreview, onResizeStart, onResizeEnd]
   )
 
   return (

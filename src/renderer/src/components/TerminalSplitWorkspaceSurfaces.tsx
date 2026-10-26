@@ -30,9 +30,7 @@ export function TerminalSplitWorkspaceSurfaces({
     visibleWorkspaceIds,
     workspaceSurfaces
   } = controller
-  // Why: this and TerminalSurface are both strict ancestors of every browser <webview>, so a
-  // remote controller needs each to drop `hidden` — the per-worktree surface hatch below cannot
-  // override an ancestor that stopped compositing.
+  // Every browser guest has this and TerminalSurface as ancestors; both must allow compositing for remote control to receive frames.
   const retainBrowserGuestPaint = useAnyBrowserGuestNeedsPaint(!effectiveActiveLayout)
   const workspaceView = useAppStore(selectShownWorkspaceView)
   if (!anyMountedWorktreeHasLayout && !workspaceView) {

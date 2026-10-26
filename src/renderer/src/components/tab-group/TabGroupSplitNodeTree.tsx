@@ -6,6 +6,8 @@ import type { HoveredTabInsertion } from './useTabDragSplit'
 import { ORCA_LAYOUT_OWNER_IS_MAIN } from '../../../../shared/layout-owner-switch'
 import { setGroupRatioThroughLayoutOwner } from './tab-group-layout-owner-commands'
 
+export { TabGroupResizeHandle as ResizeHandle } from './TabGroupResizeHandle'
+
 function SplitNode({
   node,
   nodePath,
@@ -54,11 +56,7 @@ function SplitNode({
         groupId={node.groupId}
         worktreeId={worktreeId}
         isVisible={isWorktreeActive}
-        // Why: hidden worktrees stay mounted so their PTYs and split layouts
-        // survive worktree switches, but only the visible worktree may own the
-        // global terminal shortcuts. If an offscreen group's pane stays
-        // "focused", Cmd/Ctrl+W and split shortcuts can hit the wrong worktree.
-        // A grid view shows several worktrees at once; only the focused one owns them.
+        // Visible panels retain their layouts; only the focused workspace owns global shortcuts.
         isFocused={isWorktreeFocused && node.groupId === focusedGroupId}
         hasSplitGroups={hasSplitGroups}
         tabStrip={tabStrip}
@@ -103,8 +101,7 @@ function SplitNode({
           touchesLeftEdge={touchesLeftEdge}
           touchesBottomEdge={isHorizontal ? touchesBottomEdge : false}
           suppressLeftBorder={suppressLeftBorder}
-          // Why: the resize handle paints the inner seam — pane borders here
-          // stack into a triple-line bar beside the divider.
+          // The resize handle owns the inner seam; pane borders would stack into extra lines.
           suppressRightBorder={isHorizontal ? true : suppressRightBorder}
           suppressBottomBorder={isHorizontal ? suppressBottomBorder : true}
           isTabDragActive={isTabDragActive}
@@ -115,7 +112,6 @@ function SplitNode({
         direction={node.direction}
         onResizeStart={() => recordFeatureInteraction('terminal-panes')}
         onRatioChange={(nextRatio) =>
-          // Switch point: main saves the group sizes once the drag ends.
           ORCA_LAYOUT_OWNER_IS_MAIN
             ? setGroupRatioThroughLayoutOwner(worktreeId, nodePath, nextRatio)
             : setTabGroupSplitRatio(worktreeId, nodePath, nextRatio)
@@ -147,14 +143,7 @@ function SplitNode({
   )
 }
 
-/**
- * The chrome-free group tree: recursive splits, resize handles, and one TabGroupPanel per leaf.
- * The host owns the drag scope (WorkspaceTabDragLayer), outer chrome, and edge policy.
- *
- * Host contract: the tree's nodes size themselves as flex items (`flex-1`), so the host must
- * mount it in a flex container that owns its rect (WorktreeSplitSurface's `absolute inset-0
- * flex`, the floating panel's surface frame). In a block parent every pane collapses to 0px.
- */
+/** Host this chrome-free tree in a sized flex container or panes collapse; the host owns drag scope and outer seams. */
 export function TabGroupSplitNodeTree({
   layout,
   worktreeId,
